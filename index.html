@@ -49,6 +49,8 @@
   .be{background:var(--ok);color:#fff;flex:1.4}
   .mini{display:flex;gap:6px;margin-top:8px}
   .mini button{border:1px solid var(--line);background:#fff;border-radius:8px;padding:5px 10px;font-size:13px}
+  .ruah{margin:16px 2px 4px;font-weight:800;font-size:15px;text-transform:uppercase;letter-spacing:.3px;color:#2d2a27;border-bottom:2px solid var(--acc);padding-bottom:5px;display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+  .ruah small{font-weight:600;text-transform:none;color:var(--mut);font-size:12px;letter-spacing:0;white-space:nowrap}
   .empty{text-align:center;color:var(--mut);padding:36px 12px;line-height:1.55}
   .modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:flex-end;justify-content:center;z-index:20}
   .sheet{background:#fff;width:100%;max-width:640px;border-radius:18px 18px 0 0;padding:18px;max-height:90vh;overflow:auto}
@@ -92,15 +94,44 @@ const LS="minharota_v1";
 let S={pkgs:[],order:[],geo:{},cfg:{cidade:"Rio Verde de Mato Grosso",uf:"MS",inicio:"Nova Rio Verde, Rio Verde de Mato Grosso, MS",valor:2.10},tab:"rota"};
 try{const d=JSON.parse(localStorage.getItem(LS)||"null"); if(d) S=Object.assign(S,d,{cfg:Object.assign(S.cfg,d.cfg||{})});}catch(e){}
 function save(){try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){}}
+setTimeout(()=>{ let mud=false; S.pkgs.forEach(p=>{ if(p.orig===undefined){ p.orig=p.endereco; p.endereco=numFix(p.endereco); mud=true; } }); if(mud){ S.order=agruparRuas(S.order.filter(Boolean)); save(); render(); } },0);
 
 function norm(s){return (s||"").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase()}
-function key(a){
-  a=norm(a).replace(/\b(rua|r\.|avenida|av\.|av|travessa|tv\.|alameda)\s+/g,"");
-  const m=a.match(/^(.*?\d+)/); return (m?m[1]:a).replace(/[^a-z0-9]+/g," ").trim();
+// ---- ruas com número: "XV de Novembro"/"Sete de Setembro" -> "15 de Novembro"/"7 de Setembro"
+const NUMS={um:1,uma:1,primeiro:1,dois:2,duas:2,tres:3,quatro:4,cinco:5,seis:6,sete:7,oito:8,nove:9,dez:10,onze:11,doze:12,treze:13,catorze:14,quatorze:14,quinze:15,dezesseis:16,dezessete:17,dezoito:18,dezenove:19,vinte:20,trinta:30};
+const MESES="janeiro|fevereiro|marco|março|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro";
+function romano(s){ if(!/^[ivxl]+$/i.test(s)) return 0; const v={i:1,v:5,x:10,l:50}; let t=0; s=s.toLowerCase();
+  for(let i=0;i<s.length;i++){ const a=v[s[i]], b=v[s[i+1]]||0; t+= a<b?-a:a; } return t>0&&t<=40?t:0; }
+function palavra(w){ // "vinte e um" já juntado como "vinte e um"
+  const p=norm(w).split(/\s+e\s+/); let t=0; for(const x of p){ if(NUMS[x]==null) return 0; t+=NUMS[x]; } return t; }
+function numFix(a){
+  if(!a) return a;
+  const PRE="^((?:rua|r\\.|avenida|av\\.?|travessa|tv\\.|alameda|pra[cç]a)\\s+)?";
+  const NW="(vinte(?:\\s+e\\s+\\S+)?|trinta(?:\\s+e\\s+\\S+)?|[a-zçêé]+|[ivxl]+)";
+  const re=new RegExp(PRE+NW+"(?=\\s+(?:de\\s+)?(?:"+MESES+")\\b|\\s*,|\\s+\\d|\\s*$)","i");
+  return a.replace(re,(m,pre,w)=>{ const n=palavra(w)||romano(w); if(!n) return m; return (pre||"")+n; })
+          .replace(/^((?:\S+\s+)?\d{1,2})\s+(janeiro|fevereiro|mar[cç]o|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro)\b/i,"$1 de $2");
 }
+function streetKey(s){ return norm(s).replace(/\b(rua|r\.|avenida|av\.|av|travessa|tv\.|alameda|praca)\s+/g,"").replace(/[^a-z0-9]+/g," ").trim(); }
+function key(a){ const r=rua(a); return (streetKey(r.street)+" "+r.num).trim(); }
 function esc(s){return (s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
-function rua(a){ // "Joaquim Murtinho, 221, Igreja" -> {street:"Joaquim Murtinho", num:"221"}
-  const m=(a||"").match(/^(.*?)[,\s]+(\d+)\b/); return m?{street:m[1].replace(/,$/,"").trim(),num:m[2]}:{street:(a||"").split(",")[0].trim(),num:""};
+function rua(a){ // "7 de Setembro, 221, Igreja" -> {street:"7 de Setembro", num:"221"}
+  a=(a||"").trim(); const parts=a.split(",").map(x=>x.trim());
+  if(parts.length>1){
+    let st=parts[0], num="";
+    const tail=st.match(/^(.+?)\s+(\d+)$/); if(tail && !/\sde$/i.test(tail[1]) && !/^(rua|r\.|avenida|av\.?|travessa|tv\.|alameda|pra[cç]a)$/i.test(tail[1].trim())){ st=tail[1]; num=tail[2]; }
+    else { const n=(parts[1].match(/^(?:n[º°o.]?\s*)?(\d+)/i)||[])[1]; if(n) num=n; }
+    return {street:st,num};
+  }
+  const m=a.match(/^(.+?)\s+(?:n[º°o.]?\s*)?(\d+)\b(?!\s*de\b)/i);
+  return m?{street:m[1].trim(),num:m[2]}:{street:a,num:""};
+}
+function ruaDe(k){ for(const p of S.pkgs) if(key(p.endereco)===k) return streetKey(rua(p.endereco).street); return k; }
+// junta as casas da mesma rua, mantendo a ordem em que a rua aparece primeiro na rota
+function agruparRuas(keys){
+  const ordemRua=[], grupos={};
+  keys.forEach(k=>{ const r=ruaDe(k); if(!grupos[r]){grupos[r]=[];ordemRua.push(r)} grupos[r].push(k); });
+  return ordemRua.flatMap(r=>grupos[r]);
 }
 function msg(t){const m=$("#msg");m.style.display=t?"block":"none";m.innerHTML=t||""}
 function brl(v){return "R$"+v.toFixed(2).replace(".",",")}
@@ -140,14 +171,19 @@ function render(){
       : '<div class="empty">Nenhuma entrega ainda.</div>';
     return;
   }
+  const cont={}; if(S.tab==="rota") list.forEach(s=>{ const r=streetKey(rua(S.pkgs[s.idx[0]].endereco).street); cont[r]=cont[r]||{c:0,p:0}; cont[r].c++; cont[r].p+=s.idx.length; });
+  let ultimaRua=null;
   $("#list").innerHTML=list.map((s,n)=>{
     const p0=S.pkgs[s.idx[0]], g=S.geo[s.k], nf=g&&!g.ok;
+    let head="";
+    if(S.tab==="rota"){ const R=rua(p0.endereco), r=streetKey(R.street);
+      if(r!==ultimaRua){ ultimaRua=r; head=`<div class="ruah">📍 ${esc(R.street)}<small>${cont[r].c} casa(s) · ${cont[r].p} pacote(s)</small></div>`; } }
     const pk=s.idx.map(i=>{const p=S.pkgs[i];return `<div class="pk"><span>${esc(p.destinatario||"—")}</span><button class="code" data-cp="${esc(p.codigo)}">${esc(p.codigo||"sem código")} ⧉</button></div>`}).join("");
     if(S.tab==="ent") return `<div class="stop"><div class="hd"><div class="num" style="background:var(--ok)">✓</div><div style="flex:1">
       <div class="addr">${esc(p0.endereco)}</div>${p0.bairro?`<div class="meta">${esc(p0.bairro)}</div>`:""}
       ${s.idx.length>1?`<span class="tag">${s.idx.length} pacotes</span>`:""}${pk}
       <div class="mini"><button data-undo="${s.k}">↩ Desfazer</button><button data-rme="${s.k}" style="color:#b42318">🗑 Apagar</button></div></div></div></div>`;
-    return `<div class="stop ${n===0?"next":""} ${nf?"nf":""}"><div class="hd"><div class="num">${n+1}</div><div style="flex:1">
+    return head+`<div class="stop ${n===0?"next":""} ${nf?"nf":""}"><div class="hd"><div class="num">${n+1}</div><div style="flex:1">
       <div class="addr">${esc(p0.endereco)}</div>${p0.bairro?`<div class="meta">${esc(p0.bairro)}</div>`:""}
       ${s.idx.length>1?`<span class="tag">⚠ ${s.idx.length} PACOTES NESTE ENDEREÇO</span>`:""}
       ${nf?`<span class="warn">não achei no mapa – posição aproximada</span>`:""}
@@ -210,9 +246,9 @@ $("#bPaste").onclick=async()=>{
     if(!lista.length && !/["{]/.test(t)) lista=t.split(/\n+/).map(l=>l.trim()).filter(Boolean).map(l=>({endereco:l}));
     if(!lista.length){ close_(); msg("⚠ Não consegui entender a lista colada. Copie de novo do chat, do [ até o ]."); return; }
     let n=0,d=0;
-    lista.forEach(p=>{ const q={codigo:(p.codigo||"").trim(),endereco:(p.endereco||"").trim(),bairro:(p.bairro||"").trim(),destinatario:(p.destinatario||"").trim(),st:""};
+    lista.forEach(p=>{ const q={codigo:(p.codigo||"").trim(),orig:(p.endereco||"").trim(),endereco:numFix((p.endereco||"").trim()),bairro:(p.bairro||"").trim(),destinatario:(p.destinatario||"").trim(),st:""};
       if(!q.endereco) return; if(q.codigo&&S.pkgs.some(x=>x.codigo===q.codigo)){d++;return} S.pkgs.push(q); n++; });
-    S.geom=null; syncOrder(); save(); render(); close_();
+    S.geom=null; syncOrder(); S.order=agruparRuas(S.order); save(); render(); close_();
     msg(`✅ ${n} pacote(s) adicionados${d?`, ${d} repetido(s) ignorados`:""}. Agora toque em <b>Calcular rota</b>.`);
   };
 };
@@ -225,7 +261,12 @@ async function nomi(params){
   const j=await r.json(); await sleep(1100); return j[0]?{lat:+j[0].lat,lon:+j[0].lon}:null;
 }
 async function geocode(p){
-  const {street,num}=rua(p.endereco), c=S.cfg.cidade, uf=S.cfg.uf;
+  const g1=await geocode1(p,p.endereco); if(g1) return g1;
+  if(p.orig && p.orig!==p.endereco) return await geocode1(p,p.orig);
+  return null;
+}
+async function geocode1(p,end){
+  const {street,num}=rua(end), c=S.cfg.cidade, uf=S.cfg.uf;
   let g=await nomi({street:(num?num+" ":"")+street,city:c,state:uf,country:"Brasil"});
   if(!g && p.bairro) g=await nomi({q:`${street}, ${p.bairro}, ${c}, ${uf}`});
   if(!g && num) g=await nomi({street,city:c,state:uf,country:"Brasil"});
@@ -273,7 +314,7 @@ $("#bCalc").onclick=async()=>{
     let modo="pelas ruas (OSRM)";
     if(!ordem){ ordem=localTSP(start,pts); modo="por distância em linha reta"; S.geom=null; }
     S.start={lat:start.lat,lon:start.lon}; S.km=km; S.tab="mapa";
-    S.order=[...ordem.map(i=>ok[i].k),...nf.map(s=>s.k)]; save(); render();
+    S.order=agruparRuas([...ordem.map(i=>ok[i].k),...nf.map(s=>s.k)]); save(); render();
     msg(`✅ Melhor rota calculada ${modo}, saindo de ${esc(origem)}${km?` · ${km.toFixed(1).replace(".",",")} km no total`:""}.${nf.length?`<br>⚠ ${nf.length} endereço(s) não achados no mapa ficaram no fim (cinza). Toque em ✏️ para corrigir ou use ▲▼.`:""}`);
   }catch(e){ S.tab="rota"; msg("Sem internet ou o serviço de mapa não respondeu. Tente de novo em instantes. ("+esc(e.message)+")"); }
   finally{ calculando=false; }
