@@ -10,7 +10,9 @@
 <style>
   :root{--bg:#f6f4f1;--card:#fff;--ink:#1d1b19;--mut:#6f6a64;--acc:#e8541c;--ok:#1f9d55;--line:#e7e2dc;--waze:#33ccff}
   *{box-sizing:border-box}
-  body{margin:0;font-family:system-ui,-apple-system,Roboto,sans-serif;background:var(--bg);color:var(--ink)}
+  html{background:#2d2a27}
+  body{margin:0 auto;max-width:480px;min-height:100vh;font-family:system-ui,-apple-system,Roboto,sans-serif;background:var(--bg);color:var(--ink);box-shadow:0 0 30px rgba(0,0,0,.35)}
+  .modal .sheet{max-width:480px}
   .top{position:sticky;top:0;z-index:5;background:var(--acc);color:#fff;padding:12px 14px 0}
   .top h1{margin:0;font-size:19px;display:flex;justify-content:space-between;align-items:center}
   .top h1 button{background:rgba(255,255,255,.2);color:#fff;border:0;border-radius:8px;padding:6px 10px;font-size:13px}
@@ -20,7 +22,7 @@
   .tabs{display:flex}
   .tabs button{flex:1;background:none;border:0;color:#fff;opacity:.75;padding:10px;font-weight:700;font-size:15px;border-bottom:3px solid transparent}
   .tabs button.on{opacity:1;border-color:#fff}
-  .wrap{max-width:640px;margin:0 auto;padding:10px 12px 170px}
+  .wrap{max-width:480px;margin:0 auto;padding:10px 12px 170px}
   #map{height:62vh;border-radius:14px;border:1px solid var(--line);display:none;margin-top:6px}
   .pin{background:var(--acc);color:#fff;border:2px solid #fff;border-radius:50%;width:28px!important;height:28px!important;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;box-shadow:0 1px 4px rgba(0,0,0,.4)}
   .pin.me{background:#2563eb}.pin.nf{background:#999}
@@ -144,14 +146,14 @@ function render(){
     if(S.tab==="ent") return `<div class="stop"><div class="hd"><div class="num" style="background:var(--ok)">✓</div><div style="flex:1">
       <div class="addr">${esc(p0.endereco)}</div>${p0.bairro?`<div class="meta">${esc(p0.bairro)}</div>`:""}
       ${s.idx.length>1?`<span class="tag">${s.idx.length} pacotes</span>`:""}${pk}
-      <div class="mini"><button data-undo="${s.k}">↩ Desfazer</button></div></div></div></div>`;
+      <div class="mini"><button data-undo="${s.k}">↩ Desfazer</button><button data-rme="${s.k}" style="color:#b42318">🗑 Apagar</button></div></div></div></div>`;
     return `<div class="stop ${n===0?"next":""} ${nf?"nf":""}"><div class="hd"><div class="num">${n+1}</div><div style="flex:1">
       <div class="addr">${esc(p0.endereco)}</div>${p0.bairro?`<div class="meta">${esc(p0.bairro)}</div>`:""}
       ${s.idx.length>1?`<span class="tag">⚠ ${s.idx.length} PACOTES NESTE ENDEREÇO</span>`:""}
       ${nf?`<span class="warn">não achei no mapa – posição aproximada</span>`:""}
       ${pk}</div></div>
       <div class="row"><a class="b bw" href="${wazeUrl(p0)}">Waze</a><a class="b bm" href="${mapsUrl(p0,s.k)}">Maps</a><button class="b be" data-ok="${s.k}">✓ Entregue</button></div>
-      <div class="mini"><button data-up="${s.k}">▲</button><button data-dn="${s.k}">▼</button><button data-ed="${s.k}">✏️ Corrigir endereço</button></div></div>`;
+      <div class="mini"><button data-up="${s.k}">▲</button><button data-dn="${s.k}">▼</button><button data-ed="${s.k}">✏️ Corrigir</button><button data-rm="${s.k}" style="color:#b42318">🗑 Apagar</button></div></div>`;
   }).join("");
 }
 
@@ -164,6 +166,13 @@ $("#list").addEventListener("click",async e=>{
     const vis=stops("pend").map(s=>s.k); const vi=vis.indexOf(k), vj=d.up?vi-1:vi+1; if(vj<0||vj>=vis.length) return;
     const a=S.order.indexOf(vis[vi]), b=S.order.indexOf(vis[vj]); [S.order[a],S.order[b]]=[S.order[b],S.order[a]]; save(); render(); }
   if(d.ed) corrigir(d.ed);
+  if(d.rm||d.rme){ const k=d.rm||d.rme, ent=!!d.rme;
+    const n=S.pkgs.filter(p=>(p.st==="ent")===ent&&key(p.endereco)===k).length;
+    sheet(`<h3>Apagar esta parada?</h3><p>Remove ${n} pacote(s) deste endereço da lista.</p>
+      <div class="sb"><button style="background:#eee" id="rX">Cancelar</button><button style="background:#b42318;color:#fff" id="rS">Apagar</button></div>`);
+    $("#rX").onclick=close_;
+    $("#rS").onclick=()=>{ S.pkgs=S.pkgs.filter(p=>!((p.st==="ent")===ent&&key(p.endereco)===k)); S.order=S.order.filter(x=>x!==k); S.geom=null; save(); render(); close_(); };
+  }
 });
 function syncOrder(){ stops("pend").forEach(s=>{ if(!S.order.includes(s.k)) S.order.push(s.k) }); }
 
@@ -180,6 +189,15 @@ function corrigir(k){
   $("#cS").onclick=()=>{ idx.forEach(i=>{S.pkgs[i].endereco=$("#cE").value.trim();S.pkgs[i].bairro=$("#cB").value.trim()}); delete S.geo[k]; save(); render(); close_(); };
 }
 
+// ---- lê a lista mesmo com sujeira do copiar/colar (\[ , aspas curvas, ``` etc.)
+function lerLista(t){
+  let s=t.replace(/[\u201C\u201D\u201E\u2033]/g,'"').replace(/[\u2018\u2019]/g,"'")
+         .replace(/```[a-z]*/gi,"").replace(/\\([\[\]_*(){}#+\-.!`~|>])/g,"$1");
+  const m=s.match(/\[[\s\S]*\]/);
+  if(m){ try{ const a=JSON.parse(m[0].replace(/,\s*([\]}])/g,"$1")); if(Array.isArray(a)) return a; }catch(e){} }
+  const out=[]; (s.match(/\{[^{}]*\}/g)||[]).forEach(o=>{ try{ out.push(JSON.parse(o.replace(/,\s*\}/g,"}"))) }catch(e){} });
+  return out;
+}
 // ---- colar lista vinda do Leitor (ROTA1:[...]) ou texto simples (1 endereço por linha)
 $("#bPaste").onclick=async()=>{
   let clip=""; try{clip=await navigator.clipboard.readText()}catch(e){}
@@ -188,10 +206,9 @@ $("#bPaste").onclick=async()=>{
    <div class="sb"><button style="background:#eee" id="pX">Cancelar</button><button style="background:var(--ok);color:#fff" id="pS">Adicionar</button></div>`);
   $("#pX").onclick=close_;
   $("#pS").onclick=()=>{
-    const t=$("#pT").value.trim(); let lista=[];
-    const m=t.match(/\[[\s\S]*\]/);
-    if(m){ try{lista=JSON.parse(m[0])}catch(e){} }
-    if(!lista.length) lista=t.split(/\n+/).map(l=>l.trim()).filter(Boolean).map(l=>({endereco:l}));
+    const t=$("#pT").value.trim(); let lista=lerLista(t);
+    if(!lista.length && !/["{]/.test(t)) lista=t.split(/\n+/).map(l=>l.trim()).filter(Boolean).map(l=>({endereco:l}));
+    if(!lista.length){ close_(); msg("⚠ Não consegui entender a lista colada. Copie de novo do chat, do [ até o ]."); return; }
     let n=0,d=0;
     lista.forEach(p=>{ const q={codigo:(p.codigo||"").trim(),endereco:(p.endereco||"").trim(),bairro:(p.bairro||"").trim(),destinatario:(p.destinatario||"").trim(),st:""};
       if(!q.endereco) return; if(q.codigo&&S.pkgs.some(x=>x.codigo===q.codigo)){d++;return} S.pkgs.push(q); n++; });
