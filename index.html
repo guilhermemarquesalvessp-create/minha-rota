@@ -8,75 +8,106 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <style>
-  :root{--bg:#f6f4f1;--card:#fff;--ink:#1d1b19;--mut:#6f6a64;--acc:#e8541c;--ok:#1f9d55;--line:#e7e2dc;--waze:#33ccff}
-  *{box-sizing:border-box}
-  html{background:#2d2a27}
-  body{margin:0 auto;max-width:480px;min-height:100vh;font-family:system-ui,-apple-system,Roboto,sans-serif;background:var(--bg);color:var(--ink);box-shadow:0 0 30px rgba(0,0,0,.35)}
-  .modal .sheet{max-width:480px}
-  .top{position:sticky;top:0;z-index:5;background:var(--acc);color:#fff;padding:12px 14px 0}
-  .top h1{margin:0;font-size:19px;display:flex;justify-content:space-between;align-items:center}
-  .top h1 button{background:rgba(255,255,255,.2);color:#fff;border:0;border-radius:8px;padding:6px 10px;font-size:13px}
-  .kpis{display:flex;gap:8px;margin:10px 0}
-  .kpi{flex:1;background:rgba(255,255,255,.16);border-radius:10px;padding:7px;text-align:center}
-  .kpi b{display:block;font-size:19px}.kpi small{font-size:11px;opacity:.9}
-  .tabs{display:flex}
-  .tabs button{flex:1;background:none;border:0;color:#fff;opacity:.75;padding:10px 2px;font-weight:700;font-size:13.5px;border-bottom:3px solid transparent}
-  .tabs button.on{opacity:1;border-color:#fff}
-  .wrap{max-width:480px;margin:0 auto;padding:10px 12px 170px}
-  #map{height:62vh;border-radius:14px;border:1px solid var(--line);display:none;margin-top:6px}
-  .pin{background:var(--acc);color:#fff;border:2px solid #fff;border-radius:50%;width:28px!important;height:28px!important;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;box-shadow:0 1px 4px rgba(0,0,0,.4)}
+  :root{
+    --bg:#f3f1ee;--card:#ffffff;--card2:#f7f5f2;--ink:#16141a;--mut:#77716b;--line:#e8e3dd;
+    --acc:#ff5a1f;--acc2:#ff8a3d;--accsoft:#fff0e8;--acctext:#b33a0b;
+    --ok:#16a34a;--oksoft:#e8f7ee;--waze:#33ccff;--wazeink:#04384b;
+    --warnbg:#fff6d6;--red:#b42318;--warnink:#7a5a00;--head:#17151c;--shadow:0 1px 2px rgba(20,16,12,.06),0 6px 18px rgba(20,16,12,.07);
+  }
+  @media (prefers-color-scheme:dark){:root{
+    --bg:#0f0e12;--card:#1b1920;--card2:#24212a;--ink:#f3f1f6;--mut:#a39dab;--line:#2e2a35;
+    --accsoft:#3a1f14;--red:#ff8577;--acctext:#ffb08a;--oksoft:#12301f;--warnbg:#3a3112;--warnink:#ffd76a;--head:#0a090c;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 6px 18px rgba(0,0,0,.35);
+  }}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html{background:#08070a}
+  body{margin:0 auto;max-width:480px;min-height:100vh;font-family:Inter,system-ui,-apple-system,Roboto,sans-serif;background:var(--bg);color:var(--ink);box-shadow:0 0 40px rgba(0,0,0,.5)}
+  button,a{font-family:inherit;cursor:pointer}
+  button:active,a.b:active,.act:active{transform:scale(.97)}
+  /* cabeçalho */
+  .top{position:relative;z-index:5;background:linear-gradient(160deg,var(--head) 0%,#2a1a14 140%);color:#fff;padding:14px 14px 10px;border-radius:0 0 22px 22px;box-shadow:0 8px 24px rgba(0,0,0,.25)}
+  .top h1{margin:0;font-size:20px;font-weight:800;letter-spacing:-.3px;display:flex;justify-content:space-between;align-items:center}
+  .top h1 .logo{display:flex;align-items:center;gap:9px}
+  .top h1 .logo i{width:34px;height:34px;border-radius:11px;background:linear-gradient(135deg,var(--acc),var(--acc2));display:flex;align-items:center;justify-content:center;font-style:normal;font-size:18px;box-shadow:0 4px 12px rgba(255,90,31,.45)}
+  .top h1 .logo small{display:block;font-size:11.5px;font-weight:600;color:#bdb6c4;letter-spacing:0;margin-top:1px}
+  .top h1 button{background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:8px 11px;font-size:13px;font-weight:600}
+  .kpis{display:grid;grid-template-columns:1fr 1fr 1fr 1.25fr;gap:7px;margin:13px 0 9px}
+  .kpi{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:8px 4px;text-align:center}
+  .kpi b{display:block;font-size:19px;font-weight:800;letter-spacing:-.4px}
+  .kpi small{font-size:10.5px;color:#bdb6c4;font-weight:600}
+  .kpi.money{background:linear-gradient(135deg,var(--acc),var(--acc2));border:0;box-shadow:0 4px 14px rgba(255,90,31,.35)}
+  .kpi.money small{color:#fff;opacity:.9}
+  .dayprog{height:6px;border-radius:9px;background:rgba(255,255,255,.1);overflow:hidden;margin:0 2px 11px}
+  .dayprog i{display:block;height:100%;width:0;background:linear-gradient(90deg,#22c55e,#86efac);border-radius:9px;transition:width .4s}
+  .tabs{display:flex;background:rgba(255,255,255,.07);border-radius:14px;padding:4px;gap:3px}
+  .tabs button{flex:1;background:none;border:0;color:#cfc8d6;padding:9px 2px;font-weight:700;font-size:12.5px;border-radius:10px;line-height:1.15}
+  .tabs button.on{background:#fff;color:var(--head);box-shadow:0 2px 8px rgba(0,0,0,.2)}
+  .tabs button span{color:var(--acc);font-weight:800}
+  /* corpo */
+  .wrap{max-width:480px;margin:0 auto;padding:14px 12px 170px}
+  .actions,.emtop{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+  .act{padding:14px 8px;border-radius:14px;border:0;font-weight:700;font-size:14px;background:var(--card);color:var(--ink);box-shadow:var(--shadow);text-align:center;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px}
+  .act.main{background:linear-gradient(135deg,#16a34a,#22c55e);color:#fff}
+  .act.wz{background:var(--waze);color:var(--wazeink)}
+  .act.gr{background:var(--card2);color:var(--mut);box-shadow:none}
+  .msg{background:var(--accsoft);color:var(--ink);border:1px solid rgba(255,90,31,.25);border-radius:14px;padding:12px;font-size:14px;margin:8px 0;display:none;line-height:1.45}
+  #map{height:62vh;border-radius:18px;border:1px solid var(--line);display:none;margin-top:6px;box-shadow:var(--shadow)}
+  .pin{background:linear-gradient(135deg,var(--acc),var(--acc2));color:#fff;border:2px solid #fff;border-radius:50%;width:28px!important;height:28px!important;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12.5px;box-shadow:0 2px 6px rgba(0,0,0,.45)}
   .pin.me{background:#2563eb}.pin.nf{background:#999}
-  .act.wz{background:var(--waze);color:#05384a}.act.gr{background:#e9e6e1;color:#333}
-  .actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
-  .act{padding:13px 8px;border-radius:12px;border:0;font-weight:700;font-size:14px;background:#2d2a27;color:#fff}
-  .act.main{background:var(--ok)}
-  .msg{background:#fff3ec;border:1px solid #f6c9b3;border-radius:12px;padding:11px;font-size:14px;margin:8px 0;display:none;line-height:1.4}
-  .stop{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;margin:9px 0}
-  .stop.next{border:2px solid var(--acc);box-shadow:0 2px 10px rgba(232,84,28,.15)}
-  .hd{display:flex;gap:10px;align-items:flex-start}
-  .num{flex:0 0 34px;height:34px;border-radius:50%;background:var(--acc);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800}
-  .stop.nf .num{background:#999}
-  .addr{font-weight:700;font-size:16px;line-height:1.3}
-  .meta{color:var(--mut);font-size:13px;margin-top:3px}
-  .tag{display:inline-block;background:#fde7dc;color:#a8380c;border-radius:999px;padding:2px 9px;font-size:12px;font-weight:800;margin-top:5px}
-  .warn{display:inline-block;background:#fff4cc;color:#7a5a00;border-radius:999px;padding:2px 9px;font-size:12px;margin-top:5px}
-  .pk{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--mut);padding:5px 0;border-top:1px dashed var(--line);margin-top:6px}
-  .code{font-family:ui-monospace,monospace;background:#f1eee9;border:0;border-radius:6px;padding:3px 7px;font-size:12px;color:var(--ink)}
-  .row{display:flex;gap:7px;margin-top:10px}
-  .b{flex:1;padding:12px 6px;border-radius:10px;border:0;font-weight:800;font-size:14px;text-align:center;text-decoration:none}
-  .bw{background:var(--waze);color:#05384a}
-  .bm{background:#e9e6e1;color:#333}
-  .be{background:var(--ok);color:#fff;flex:1.4}
-  .mini{display:flex;gap:6px;margin-top:8px}
-  .mini button{border:1px solid var(--line);background:#fff;border-radius:8px;padding:5px 10px;font-size:13px}
-  .ruah{margin:16px 2px 4px;font-weight:800;font-size:15px;text-transform:uppercase;letter-spacing:.3px;color:#2d2a27;border-bottom:2px solid var(--acc);padding-bottom:5px;display:flex;justify-content:space-between;align-items:baseline;gap:8px}
-  .ruah small{font-weight:600;text-transform:none;color:var(--mut);font-size:12px;letter-spacing:0;white-space:nowrap}
-  .ruah button{font-size:12px;font-weight:800;text-transform:none;letter-spacing:0;border:0;border-radius:8px;padding:6px 9px;background:#2d2a27;color:#fff;white-space:nowrap}
-  .ruah button.out{background:#eee;color:#333}
+  /* cabeçalho de rua */
+  .ruah{position:sticky;top:6px;box-shadow:0 4px 12px rgba(0,0,0,.12);z-index:3;margin:18px 0 8px;padding:10px 12px;background:var(--card2);border-radius:14px;border-left:4px solid var(--acc);display:flex;justify-content:space-between;align-items:center;gap:8px;font-weight:800;font-size:14.5px;text-transform:uppercase;letter-spacing:.2px;color:var(--ink)}
   .ruah .rt{display:flex;flex-direction:column;gap:2px}
-  .emtop{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px}
-  .empty{text-align:center;color:var(--mut);padding:36px 12px;line-height:1.55}
-  .modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:flex-end;justify-content:center;z-index:20}
-  .sheet{background:#fff;width:100%;max-width:640px;border-radius:18px 18px 0 0;padding:18px;max-height:90vh;overflow:auto}
-  .sheet h3{margin:0 0 8px}.sheet p{color:var(--mut);font-size:14px;line-height:1.45}
-  .sheet textarea,.sheet input{width:100%;border:1px solid var(--line);border-radius:9px;padding:10px;font-size:15px;margin:5px 0}
+  .ruah small{font-weight:600;text-transform:none;color:var(--mut);font-size:12px;letter-spacing:0}
+  .ruah button{font-size:12.5px;font-weight:800;text-transform:none;letter-spacing:0;border:0;border-radius:10px;padding:8px 11px;background:var(--ink);color:var(--bg);white-space:nowrap}
+  .ruah button.out{background:var(--line);color:var(--ink)}
+  /* cartão de parada */
+  .stop{position:relative;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px;margin:10px 0;box-shadow:var(--shadow)}
+  .stop.next{border:2px solid var(--acc);box-shadow:0 6px 22px rgba(255,90,31,.22)}
+  .stop.next::before{content:"PRÓXIMA";position:absolute;top:-10px;right:14px;background:linear-gradient(135deg,var(--acc),var(--acc2));color:#fff;font-size:10.5px;font-weight:800;letter-spacing:.8px;padding:3px 9px;border-radius:999px}
+  .hd{display:flex;gap:12px;align-items:flex-start}
+  .hd>div{min-width:0}
+  .num{flex:0 0 36px;height:36px;border-radius:12px;background:var(--accsoft);color:var(--acctext);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px}
+  .stop.next .num{background:linear-gradient(135deg,var(--acc),var(--acc2));color:#fff}
+  .stop.nf .num{background:var(--card2);color:var(--mut)}
+  .addr{font-weight:800;font-size:17px;line-height:1.25;letter-spacing:-.2px}
+  .comp{color:var(--mut);font-size:13.5px;margin-top:2px;line-height:1.3}
+  .meta{color:var(--mut);font-size:12.5px;margin-top:3px}
+  .tag{display:inline-block;background:var(--accsoft);color:var(--acctext);border-radius:999px;padding:3px 10px;font-size:11.5px;font-weight:800;margin-top:7px}
+  .warn{display:inline-block;background:var(--warnbg);color:var(--warnink);border-radius:999px;padding:3px 10px;font-size:11.5px;font-weight:600;margin-top:7px}
+  .pk{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:13px;color:var(--mut);padding:7px 0 0;border-top:1px solid var(--line);margin-top:9px}
+  .pk span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .code{font-family:ui-monospace,Menlo,monospace;background:var(--card2);border:1px solid var(--line);border-radius:8px;padding:4px 8px;font-size:11.5px;color:var(--ink);white-space:nowrap;flex-shrink:0}
+  .row{display:grid;grid-template-columns:1fr 1fr 1.6fr;gap:7px;margin-top:12px}
+  .b{padding:13px 6px;border-radius:13px;border:0;font-weight:800;font-size:14px;text-align:center;text-decoration:none;display:flex;align-items:center;justify-content:center}
+  .bw{background:var(--waze);color:var(--wazeink)}
+  .bm{background:var(--card2);color:var(--ink);border:1px solid var(--line)}
+  .be{background:linear-gradient(135deg,#16a34a,#22c55e);color:#fff;font-size:15px;box-shadow:0 4px 12px rgba(22,163,74,.3)}
+  .mini{display:flex;gap:6px;margin-top:9px;flex-wrap:wrap}
+  .mini button{border:1px solid var(--line);background:transparent;color:var(--mut);border-radius:10px;padding:6px 11px;font-size:12.5px;font-weight:600}
+  .empty{text-align:center;color:var(--mut);padding:40px 16px;line-height:1.6;font-size:15px}
+  /* janelas */
+  .modal{position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(3px);display:none;align-items:flex-end;justify-content:center;z-index:20}
+  .sheet{background:var(--card);color:var(--ink);width:100%;max-width:480px;border-radius:24px 24px 0 0;padding:20px 18px 24px;max-height:90vh;overflow:auto}
+  .sheet::before{content:"";display:block;width:42px;height:5px;border-radius:9px;background:var(--line);margin:-8px auto 14px}
+  .sheet h3{margin:0 0 8px;font-size:18px}.sheet p{color:var(--mut);font-size:14px;line-height:1.45}
+  .sheet textarea,.sheet input{width:100%;border:1px solid var(--line);background:var(--card2);color:var(--ink);border-radius:12px;padding:11px;font-size:15px;margin:5px 0;font-family:inherit}
   .sheet textarea{height:140px;font-size:13px}
-  .sheet label{font-size:13px;color:var(--mut);display:block;margin-top:8px}
-  .sb{display:flex;gap:8px;margin-top:12px}.sb button{flex:1;padding:12px;border-radius:10px;border:0;font-weight:700}
-  .bar{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);padding:10px 12px;display:flex;gap:8px;z-index:6}
-  .bar a,.bar button{flex:1;padding:13px;border-radius:12px;border:0;font-weight:800;font-size:14px;text-align:center;text-decoration:none}
-  .prog{height:6px;background:#eee;border-radius:9px;overflow:hidden;margin-top:8px}.prog i{display:block;height:100%;background:var(--acc);width:0}
+  .sheet label{font-size:12.5px;color:var(--mut);display:block;margin-top:10px;font-weight:600}
+  .sb{display:flex;gap:8px;margin-top:14px}.sb button{flex:1;padding:13px;border-radius:13px;border:0;font-weight:700;font-size:14.5px}
+  .prog{height:6px;background:var(--line);border-radius:9px;overflow:hidden;margin-top:8px}.prog i{display:block;height:100%;background:var(--acc);width:0}
 </style>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800&display=swap" rel="stylesheet">
 </head>
 <body>
 <div class="top">
-  <h1>🛵 Minha Rota <button id="bCfg">⚙️ Ajustes</button></h1>
+  <h1><span class="logo"><i>🛵</i><span>Minha Rota<small id="kSub">Nova Rio Verde</small></span></span><button id="bCfg">⚙️ Ajustes</button></h1>
   <div class="kpis">
     <div class="kpi"><b id="kStops">0</b><small>paradas</small></div>
-    <div class="kpi"><b id="kPend">0</b><small>pacotes faltando</small></div>
+    <div class="kpi"><b id="kPend">0</b><small>faltando</small></div>
     <div class="kpi"><b id="kEnt">0</b><small>entregues</small></div>
-    <div class="kpi"><b id="kGanho">R$0</b><small>hoje</small></div>
+    <div class="kpi money"><b id="kGanho">R$0</b><small>ganho hoje</small></div>
   </div>
+  <div class="dayprog"><i id="kBar"></i></div>
   <div class="tabs"><button class="on" data-t="rota">Rota</button><button data-t="emrota">🚚 Em Rota <span id="kAtv"></span></button><button data-t="mapa">🗺️ Mapa</button><button data-t="ent">Entregues</button></div>
 </div>
 <div class="wrap">
@@ -95,10 +126,10 @@
 <script>
 const $=s=>document.querySelector(s);
 const LS="minharota_v1";
-let S={pkgs:[],order:[],geo:{},cfg:{cidade:"Rio Verde de Mato Grosso",uf:"MS",inicio:"Nova Rio Verde, Rio Verde de Mato Grosso, MS",valor:2.10},tab:"rota"};
-try{const d=JSON.parse(localStorage.getItem(LS)||"null"); if(d) S=Object.assign(S,d,{cfg:Object.assign(S.cfg,d.cfg||{})});}catch(e){}
+let S={pkgs:[],order:[],geo:{},cfg:{cidade:"Rio Verde de Mato Grosso",uf:"MS",inicio:"Nova Rio Verde, Rio Verde de Mato Grosso, MS",bairro:"Nova Rio Verde",valor:2.10},tab:"rota"};
+try{const d=JSON.parse(localStorage.getItem(LS)||"null"); if(d) S=Object.assign(S,d,{cfg:Object.assign(S.cfg,d.cfg||{})}); if(S.cfg.bairro===undefined) S.cfg.bairro="Nova Rio Verde";}catch(e){}
 function save(){try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){}}
-setTimeout(()=>{ let mud=false; S.pkgs.forEach(p=>{ if(p.orig===undefined){ p.orig=p.endereco; p.endereco=numFix(p.endereco); mud=true; } }); if(mud){ S.order=agruparRuas(S.order.filter(Boolean)); save(); render(); } },0);
+setTimeout(()=>{ registrarRuas(); let mud=false; S.pkgs.forEach(p=>{ if(p.orig===undefined){ p.orig=p.endereco; p.endereco=numFix(p.endereco); mud=true; } }); if(mud){ S.order=agruparRuas(S.order.filter(Boolean)); save(); render(); } },0);
 
 function norm(s){return (s||"").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase()}
 // ---- ruas com número: "XV de Novembro"/"Sete de Setembro" -> "15 de Novembro"/"7 de Setembro"
@@ -116,7 +147,24 @@ function numFix(a){
   return a.replace(re,(m,pre,w)=>{ const n=palavra(w)||romano(w); if(!n) return m; return (pre||"")+n; })
           .replace(/^((?:\S+\s+)?\d{1,2})\s+(janeiro|fevereiro|mar[cç]o|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro)\b/i,"$1 de $2");
 }
-function streetKey(s){ return norm(s).replace(/\b(rua|r\.|avenida|av\.|av|travessa|tv\.|alameda|praca)\s+/g,"").replace(/[^a-z0-9]+/g," ").trim(); }
+// nome da rua "limpo" (sem Rua/Av, sem de/da/do, sem acento)
+function baseRua(s){ return norm(s).replace(/\b(rua|r\.|avenida|av\.|av|travessa|tv\.|alameda|praca)\s+/g,"").replace(/[^a-z0-9]+/g," ").split(" ").filter(w=>w&&!["de","da","do","dos","das","e"].includes(w)).join(" "); }
+function lev(a,b){ const m=a.length,n=b.length; if(Math.abs(m-n)>2) return 9; let p=[...Array(n+1).keys()];
+  for(let i=1;i<=m;i++){ const c=[i]; for(let j=1;j<=n;j++) c[j]=Math.min(p[j]+1,c[j-1]+1,p[j-1]+(a[i-1]===b[j-1]?0:1)); p=c; } return p[n]; }
+function tokIgual(a,b){ if(a===b) return true; if(/\d/.test(a)||/\d/.test(b)) return false; const L=Math.max(a.length,b.length); return lev(a,b) <= (L<=5?1:2); }
+function mesmaRua(a,b){ // "geni makert" ~ "geni mackert lima", "genir marcket lima" ~ "geni mackert lima"
+  const A=a.split(" "), B=b.split(" "); const [c,l]=A.length<=B.length?[A,B]:[B,A];
+  if(c.length<l.length && c.length<2) return false;
+  return c.every((t,i)=>tokIgual(t,l[i]));
+}
+// junta ruas escritas de jeitos diferentes; o mapa fica salvo para a ordem não mudar
+function registrarRuas(){
+  S.canon=S.canon||{}; const canon=S.canon;
+  const novos=[...new Set(S.pkgs.map(p=>baseRua(rua(p.endereco).street)))].filter(b=>b&&!(b in canon))
+    .sort((x,y)=>y.split(" ").length-x.split(" ").length||y.length-x.length);
+  for(const b of novos){ const alvo=[...new Set(Object.values(canon))].find(c=>mesmaRua(b,c)); canon[b]=alvo||b; }
+}
+function streetKey(s){ const b=baseRua(s); return (S.canon&&S.canon[b])||b; }
 function key(a){ const r=rua(a); return (streetKey(r.street)+" "+r.num).trim(); }
 function esc(s){return (s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
 function rua(a){ // "7 de Setembro, 221, Igreja" -> {street:"7 de Setembro", num:"221"}
@@ -152,20 +200,25 @@ function stops(status){
   } else arr.sort((a,b)=>Math.max(...b.idx.map(i=>S.pkgs[i].t||0))-Math.max(...a.idx.map(i=>S.pkgs[i].t||0)));
   return arr;
 }
-function query(p){return `${p.endereco.split(",").slice(0,2).join(",")}, ${S.cfg.cidade} - ${S.cfg.uf}`}
-function wazeUrl(p){return "https://waze.com/ul?q="+encodeURIComponent(query(p))+"&navigate=yes"}
+function query(p){const b=p.bairro||S.cfg.bairro; return `${p.endereco.split(",").slice(0,2).join(",")}${b?", "+b:""}, ${S.cfg.cidade} - ${S.cfg.uf}`}
+function wazeUrl(p){ const g=S.geo[key(p.endereco)];
+  if(g&&g.ok&&!g.fora) return `https://waze.com/ul?ll=${g.lat.toFixed(6)},${g.lon.toFixed(6)}&navigate=yes`;
+  return "https://waze.com/ul?q="+encodeURIComponent(query(p))+"&navigate=yes"; }
 function mapsUrl(p,k){const g=S.geo[k];return "https://www.google.com/maps/dir/?api=1&travelmode=driving&destination="+(g&&g.ok?g.lat+","+g.lon:encodeURIComponent(query(p)))}
 
+function addrHTML(e){ const p=(e||"").split(","); const main=p.slice(0,2).join(",").trim(), comp=p.slice(2).join(",").trim();
+  return `<div class="addr">${esc(main)}</div>${comp?`<div class="comp">${esc(comp)}</div>`:""}`; }
 function cardRota(s,n,primeiro){
   const p0=S.pkgs[s.idx[0]], semMapa=(S.semMapa||[]).includes(ruaDe(s.k));
   const pk=s.idx.map(i=>{const p=S.pkgs[i];return `<div class="pk"><span>${esc(p.destinatario||"—")}</span><button class="code" data-cp="${esc(p.codigo)}">${esc(p.codigo||"sem código")} ⧉</button></div>`}).join("");
   return `<div class="stop ${primeiro?"next":""} ${semMapa?"nf":""}" id="st-${n}"><div class="hd"><div class="num">${n+1}</div><div style="flex:1">
-      <div class="addr">${esc(p0.endereco)}</div>${p0.bairro?`<div class="meta">${esc(p0.bairro)}</div>`:""}
+      ${addrHTML(p0.endereco)}${p0.bairro?`<div class="meta">${esc(p0.bairro)}</div>`:""}
       ${s.idx.length>1?`<span class="tag">⚠ ${s.idx.length} PACOTES NESTE ENDEREÇO</span>`:""}
-      ${semMapa?`<span class="warn">rua não achada no mapa</span>`:""}
+      ${semMapa&&!(S.geo[s.k]&&S.geo[s.k].fora)?`<span class="warn">rua não achada no mapa</span>`:""}
+      ${(()=>{const g=S.geo[s.k];return g&&g.ok&&g.fora?`<span class="warn">⚠ o mapa achou essa rua fora do bairro – ficou no fim, confira</span>`:""})()}
       ${pk}</div></div>
-      <div class="row"><a class="b bw" href="${wazeUrl(p0)}">Waze</a><a class="b bm" href="${mapsUrl(p0,s.k)}">Maps</a><button class="b be" data-ok="${s.k}">✓ Entregue</button></div>
-      <div class="mini"><button data-up="${s.k}">▲</button><button data-dn="${s.k}">▼</button><button data-ed="${s.k}">✏️ Corrigir</button><button data-rm="${s.k}" style="color:#b42318">🗑 Apagar</button></div></div>`;
+      <div class="row"><a class="b bw" href="${wazeUrl(p0)}">Waze</a><a class="b bm" href="${mapsUrl(p0,s.k)}">Maps</a><button class="b be" data-ok="${s.k}">✓ Entregue${s.idx.length>1?` (${s.idx.length})`:""}</button></div>
+      <div class="mini"><button data-up="${s.k}">▲</button><button data-dn="${s.k}">▼</button><button data-ed="${s.k}">✏️ Corrigir</button><button data-rm="${s.k}" style="color:var(--red)">🗑 Apagar</button></div></div>`;
 }
 function listaPorRua(list,modo){ // modo: "plan" (botão pôr em rota) ou "ativo" (botão tirar)
   const cont={}; list.forEach(s=>{ const r=ruaDe(s.k); cont[r]=cont[r]||{c:0,p:0}; cont[r].c++; cont[r].p+=s.idx.length; });
@@ -185,6 +238,8 @@ function render(){
   $("#kEnt").textContent=ent;
   $("#kGanho").textContent=brl(ent*(+S.cfg.valor||0));
   $("#kAtv").textContent=atv.length?`(${atv.length})`:"";
+  $("#kBar").style.width=(S.pkgs.length?Math.round(100*ent/S.pkgs.length):0)+"%";
+  $("#kSub").textContent=(S.cfg.bairro||S.cfg.cidade)+(S.pkgs.length?` · ${ent}/${S.pkgs.length} entregues`:"");
   document.querySelectorAll(".tabs button").forEach(b=>b.classList.toggle("on",b.dataset.t===S.tab));
   $("#acts").style.display=(S.tab==="rota"||S.tab==="mapa")?"grid":"none";
   $("#map").style.display=S.tab==="mapa"?"block":"none";
@@ -205,9 +260,9 @@ function render(){
     $("#list").innerHTML=list.map(s=>{ const p0=S.pkgs[s.idx[0]];
       const pk=s.idx.map(i=>{const p=S.pkgs[i];return `<div class="pk"><span>${esc(p.destinatario||"—")}</span><button class="code" data-cp="${esc(p.codigo)}">${esc(p.codigo||"sem código")} ⧉</button></div>`}).join("");
       return `<div class="stop"><div class="hd"><div class="num" style="background:var(--ok)">✓</div><div style="flex:1">
-      <div class="addr">${esc(p0.endereco)}</div>${p0.bairro?`<div class="meta">${esc(p0.bairro)}</div>`:""}
+      ${addrHTML(p0.endereco)}${p0.bairro?`<div class="meta">${esc(p0.bairro)}</div>`:""}
       ${s.idx.length>1?`<span class="tag">${s.idx.length} pacotes</span>`:""}${pk}
-      <div class="mini"><button data-undo="${s.k}">↩ Desfazer</button><button data-rme="${s.k}" style="color:#b42318">🗑 Apagar</button></div></div></div></div>`; }).join("");
+      <div class="mini"><button data-undo="${s.k}">↩ Desfazer</button><button data-rme="${s.k}" style="color:var(--red)">🗑 Apagar</button></div></div></div></div>`; }).join("");
     return;
   }
   // aba Rota: o que ainda não foi posto em rota
@@ -254,7 +309,7 @@ function corrigir(k){
    <p>Depois de corrigir, toque em <b>Calcular rota</b> de novo.</p>
    <div class="sb"><button style="background:#eee" id="cX">Cancelar</button><button style="background:var(--ok);color:#fff" id="cS">Salvar</button></div>`);
   $("#cX").onclick=close_;
-  $("#cS").onclick=()=>{ idx.forEach(i=>{S.pkgs[i].endereco=$("#cE").value.trim();S.pkgs[i].bairro=$("#cB").value.trim()}); delete S.geo[k]; save(); render(); close_(); };
+  $("#cS").onclick=()=>{ idx.forEach(i=>{S.pkgs[i].endereco=$("#cE").value.trim();S.pkgs[i].bairro=$("#cB").value.trim()}); delete S.geo[k]; registrarRuas(); save(); render(); close_(); };
 }
 
 // ---- lê a lista mesmo com sujeira do copiar/colar (\[ , aspas curvas, ``` etc.)
@@ -280,13 +335,13 @@ $("#bPaste").onclick=async()=>{
     let n=0,d=0;
     lista.forEach(p=>{ const q={codigo:(p.codigo||"").trim(),orig:(p.endereco||"").trim(),endereco:numFix((p.endereco||"").trim()),bairro:(p.bairro||"").trim(),destinatario:(p.destinatario||"").trim(),st:""};
       if(!q.endereco) return; if(q.codigo&&S.pkgs.some(x=>x.codigo===q.codigo)){d++;return} S.pkgs.push(q); n++; });
-    S.geom=null; syncOrder(); S.order=agruparRuas(S.order); save(); render(); close_();
+    registrarRuas(); S.geom=null; syncOrder(); S.order=agruparRuas(S.order); save(); render(); close_();
     msg(`✅ ${n} pacote(s) adicionados${d?`, ${d} repetido(s) ignorados`:""}. Agora toque em <b>Calcular rota</b>.`);
   };
 };
 
 // ---- geocodificação (OpenStreetMap / Nominatim) — 1 pedido por segundo, com cache, só dentro da cidade
-const GEOV=2; if(S.geov!==GEOV){ S.geo={}; S.geov=GEOV; save(); }
+const GEOV=3; if(S.geov!==GEOV){ S.geo={}; S.geov=GEOV; save(); }
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const TIPOS_OK=["road","house","building","residential","street","house_number"];
 async function nomiRaw(params){
@@ -301,9 +356,20 @@ async function cidade(){
   if(!S.geo[k]){ const j=await nomiRaw({city:S.cfg.cidade,state:S.cfg.uf,country:"Brasil"}); S.geo[k]=j[0]?{lat:+j[0].lat,lon:+j[0].lon,ok:true}:{ok:false}; save(); }
   return CIDADE=S.geo[k].ok?S.geo[k]:null;
 }
-async function nomi(params){ // só aceita ruas/casas dentro de ~12 km do centro da cidade
-  const C=await cidade();
-  if(C) params=Object.assign({viewbox:[C.lon-0.11,C.lat+0.11,C.lon+0.11,C.lat-0.11].join(","),bounded:1},params);
+let AREA="cidade", BAIRRO=null;
+async function bairroBox(){ // retângulo em volta do bairro da rota (com uma folga de ~600 m)
+  if(!S.cfg.bairro) return null; if(BAIRRO) return BAIRRO;
+  const k="__bairro__"+S.cfg.bairro+"|"+S.cfg.cidade;
+  if(!S.geo[k]){ const j=await nomiRaw({q:`${S.cfg.bairro}, ${S.cfg.cidade}, ${S.cfg.uf}`}); const x=j.find(r=>r.boundingbox);
+    if(x){ let [s,n,w,e]=x.boundingbox.map(Number); const cy=(s+n)/2, cx=(w+e)/2, hy=Math.max((n-s)/2+0.006,0.0125), hx=Math.max((e-w)/2+0.006,0.0125);
+      S.geo[k]={ok:true,s:cy-hy,n:cy+hy,w:cx-hx,e:cx+hx}; } else S.geo[k]={ok:false}; save(); }
+  return BAIRRO=S.geo[k].ok?S.geo[k]:null;
+}
+async function nomi(params){ // AREA "bairro": só dentro do bairro; "cidade": até ~12 km do centro
+  const C=await cidade(), B=AREA==="bairro"?await bairroBox():null;
+  if(AREA==="bairro"&&!B) return null;
+  if(B) params=Object.assign({viewbox:[B.w,B.n,B.e,B.s].join(","),bounded:1},params);
+  else if(C) params=Object.assign({viewbox:[C.lon-0.11,C.lat+0.11,C.lon+0.11,C.lat-0.11].join(","),bounded:1},params);
   const j=await nomiRaw(params);
   for(const x of j){
     const t=x.addresstype||x.type; if(!TIPOS_OK.includes(t) && x.category!=="highway" && x.class!=="highway") continue;
@@ -313,10 +379,16 @@ async function nomi(params){ // só aceita ruas/casas dentro de ~12 km do centro
   }
   return null;
 }
-async function geocode(p){
+async function geocode2(p){
   const g1=await geocode1(p,p.endereco); if(g1) return g1;
   if(p.orig && p.orig!==p.endereco) return await geocode1(p,p.orig);
   return null;
+}
+async function geocode(p){ // 1º tenta dentro do bairro da rota; só se não achar, procura na cidade e avisa
+  try{ const B=await bairroBox();
+       if(B){ AREA="bairro"; const g=await geocode2(p); if(g) return g; }
+       AREA="cidade"; const g2=await geocode2(p); if(g2 && B) g2.fora=true; return g2; }
+  finally{ AREA="cidade"; }
 }
 async function geocode1(p,end){
   const {street,num}=rua(end), c=S.cfg.cidade, uf=S.cfg.uf;
@@ -365,10 +437,17 @@ $("#bCalc").onclick=async()=>{
       msg(`🗺️ Achando endereços no mapa: ${i+1} de ${falta.length}…<div class="prog"><i style="width:${Math.round(100*(i+1)/falta.length)}%"></i></div>`);
       const g=await geocode(S.pkgs[falta[i].idx[0]]); S.geo[falta[i].k]=g?{...g,ok:true}:{ok:false}; save();
     }
+    // pontos fora do bairro não entram na rota. Se o bairro não está no mapa, descarta os que ficaram longe do grupo
+    if(!(await bairroBox())){
+      const ps=pend.map(s=>S.geo[s.k]).filter(g=>g&&g.ok);
+      if(ps.length>=4){ const med=a=>{const b=[...a].sort((x,y)=>x-y);return b[Math.floor(b.length/2)]};
+        const M={lat:med(ps.map(g=>g.lat)),lon:med(ps.map(g=>g.lon))};
+        ps.forEach(g=>{ g.fora = hav(M,g)>2.5; }); save(); }
+    }
     // agrupa por rua: cada rua vira um ponto (média das casas achadas)
     const ruas={}; pend.forEach(s=>{ const r=ruaDe(s.k); (ruas[r]=ruas[r]||{r,stops:[]}).stops.push(s); });
     const L=Object.values(ruas);
-    L.forEach(R=>{ const gs=R.stops.map(s=>S.geo[s.k]).filter(g=>g&&g.ok); R.pt=gs.length?{lat:gs.reduce((a,g)=>a+g.lat,0)/gs.length,lon:gs.reduce((a,g)=>a+g.lon,0)/gs.length}:null; });
+    L.forEach(R=>{ const gs=R.stops.map(s=>S.geo[s.k]).filter(g=>g&&g.ok&&!g.fora); R.pt=gs.length?{lat:gs.reduce((a,g)=>a+g.lat,0)/gs.length,lon:gs.reduce((a,g)=>a+g.lon,0)/gs.length}:null; });
     const okR=L.filter(R=>R.pt), nfR=L.filter(R=>!R.pt);
     if(!okR.length){ msg("Não consegui achar as ruas no mapa. Confira a cidade em ⚙️ Ajustes."); return; }
     if(!start) start=okR[0].pt;
@@ -402,7 +481,7 @@ function drawMap(pend){
   const b=[];
   if(S.start){ L.marker([S.start.lat,S.start.lon],{icon:L.divIcon({className:"",html:'<div class="pin me">●</div>'})}).addTo(LAYER).bindPopup("Saída"); b.push([S.start.lat,S.start.lon]); }
   const line=S.start?[[S.start.lat,S.start.lon]]:[];
-  pend.forEach((s,n)=>{ const g=S.geo[s.k]; if(!g||!g.ok) return; const p=S.pkgs[s.idx[0]];
+  pend.forEach((s,n)=>{ const g=S.geo[s.k]; if(!g||!g.ok||g.fora) return; const p=S.pkgs[s.idx[0]];
     const ll=[g.lat,g.lon]; b.push(ll); line.push(ll);
     L.marker(ll,{icon:L.divIcon({className:"",html:`<div class="pin">${n+1}</div>`})}).addTo(LAYER)
      .bindPopup(`<b>${n+1}. ${esc(p.endereco)}</b><br>${s.idx.length} pacote(s)<br><a href="${wazeUrl(p)}">Abrir no Waze</a>`); });
@@ -422,11 +501,13 @@ $("#bCfg").onclick=()=>{
   sheet(`<h3>Ajustes</h3>
    <label>Cidade</label><input id="aC" value="${esc(S.cfg.cidade)}">
    <label>Estado (sigla)</label><input id="aU" value="${esc(S.cfg.uf)}">
+   <label>Bairro da rota (o app procura primeiro só dentro dele)</label><input id="aB" value="${esc(S.cfg.bairro||"")}">
    <label>Ponto de partida (usado se o GPS não funcionar)</label><input id="aI" value="${esc(S.cfg.inicio)}">
    <label>Quanto ganho por pacote (R$)</label><input id="aV" inputmode="decimal" value="${String(S.cfg.valor).replace(".",",")}">
    <div class="sb"><button style="background:#eee" id="aX">Cancelar</button><button style="background:var(--ok);color:#fff" id="aS">Salvar</button></div>`);
   $("#aX").onclick=close_;
-  $("#aS").onclick=()=>{S.cfg={cidade:$("#aC").value.trim(),uf:$("#aU").value.trim(),inicio:$("#aI").value.trim(),valor:parseFloat($("#aV").value.replace(",","."))||0};save();render();close_()};
+  $("#aS").onclick=()=>{const nb=$("#aB").value.trim(); if(nb!==S.cfg.bairro){ S.geo={}; BAIRRO=null; S.geom=null; }
+  S.cfg={cidade:$("#aC").value.trim(),uf:$("#aU").value.trim(),bairro:nb,inicio:$("#aI").value.trim(),valor:parseFloat($("#aV").value.replace(",","."))||0};CIDADE=null;save();render();close_()};
 };
 $("#bWazeNext").addEventListener("click",e=>{ if($("#bWazeNext").getAttribute("href")==="#") e.preventDefault(); });
 render();
